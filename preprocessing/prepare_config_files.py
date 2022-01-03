@@ -1,5 +1,6 @@
 import pandas as pd
 import logging
+from utilities.py_tools import read_file, save_file, get_root
 
 logging.basicConfig(level=logging.INFO,
                     format="%(asctime)s - [%(levelname)s] (%(filename)s).%(funcName)s(%(lineno)d) - %(message)s")
@@ -13,14 +14,14 @@ def prepare_mint_sample():
 
     # Read and clean Data Frame
     try:
-        df = pd.read_excel(sample_path)
+        df = read_file(sample_path, encoding='utf8')
         df.fillna(0, inplace=True)
     except (FileNotFoundError, FileExistsError):
         logging.critical(f"Config file in path={sample_path} is not found")
         return
 
     # Save and return the result
-    df.to_csv(result_path, encoding='utf8', index=False)
+    save_file(result_path, df, encoding='utf8')
     return df
 
 
@@ -31,7 +32,7 @@ def prepare_token_params_sample():
 
     # Read config Excel file
     try:
-        df = pd.read_excel(sample_path)
+        df = read_file(sample_path, encoding='utf8')
         df.fillna(0, inplace=True)
 
     except (FileNotFoundError, FileExistsError):
@@ -39,7 +40,7 @@ def prepare_token_params_sample():
         return
 
     # Save result as csv file
-    df.to_csv(result_path, encoding='utf8', index=False)
+    save_file(result_path, df, encoding='utf8', index=False)
     return df
 
 

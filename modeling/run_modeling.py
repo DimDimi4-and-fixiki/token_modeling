@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 from preprocessing.prepare_config_files import prepare_token_params_sample, prepare_initial_params_sample
-from utilities.py_tools import log
+from utilities.py_tools import log, get_turnover_distribution
 from models.investors import Investor
 from models.farms import Farm
 
@@ -18,7 +18,7 @@ NUM_INVESTORS = int(df_initial_params['investors_num'].values[0])
 # Turnover parameters
 TURNOVER, TURNOVER_RATE = float(df_initial_params['turnover'].values[0]), float(df_initial_params['turnover_rate'].values[0])
 
-
+turnover_distr = get_turnover_distribution(turnover=TURNOVER, turnover_rate=TURNOVER_RATE, num_years=3)
 investor = Investor(risk_coefficient=0.1, months_num=48)
 sb_pool = Farm()
 log("Token params sample is loaded")

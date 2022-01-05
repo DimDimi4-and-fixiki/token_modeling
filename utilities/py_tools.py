@@ -108,3 +108,31 @@ def save_file(file_name, data, root=get_root(), encoding='cp1251', sep=',', shee
         data.read_csv(root + file_name, encoding=encoding, sep=sep, index=index)
         if verbose:
             log('Loaded ' + file_name)
+
+
+def get_turnover_distribution(turnover, turnover_rate, num_years, growth_type='linear'):
+    """
+
+    :param turnover: Initial turnover
+    :param turnover_rate: Annual rate of turnover growth
+    :param num_years: Number of years to get distribution for
+    :param growth_type: Type of distribution
+    """
+
+    # Distribution of the turnover
+    turnover_distr = [turnover]
+    num_days = 365 * num_years
+
+    for num_year in range(1, num_years + 1):
+        turnover_prev_year = turnover * (1 + turnover_rate) ** (num_year - 1)
+        turnover_next_year = turnover * (1 + turnover_rate) ** num_year
+        turnover_delta = (turnover_next_year - turnover_prev_year) / 365
+
+        for num_day in range(1, 366):
+            turnover_distr.append(turnover_prev_year + num_day * turnover_delta)
+
+    return turnover_distr
+
+
+
+

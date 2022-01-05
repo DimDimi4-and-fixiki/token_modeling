@@ -44,6 +44,37 @@ def prepare_token_params_sample():
     return df
 
 
+def prepare_initial_params_sample():
+    # Paths for config files
+    sample_path = 'config/initial_params.xlsx'
+    result_path = 'config/token_params.csv'
+
+    # Read config Excel file
+    try:
+        df = read_file(sample_path, encoding='utf8')
+        df.fillna(0, inplace=True)
+
+    except (FileNotFoundError, FileExistsError):
+        logging.critical(f"Config file in path={sample_path} is not found")
+        return
+
+    # Rename columns
+    cols_mapper = {
+        'Темп роста оборота в год': 'turnover_rate',
+        'Начальный оборот, $': 'turnover',
+        'Начальное число инвесторов': 'investors_num',
+        'Мат ожидание риска инвестора': 'risk_mu',
+        'Стандартное отклонение риска инвестора': 'risk_std'
+    }
+    df.rename(columns=cols_mapper, inplace=True)
+
+    # Save result as csv file
+    # save_file(result_path, df, encoding='utf8', index=False)
+    return df
+
+
 if __name__ == '__main__':
     df_mint_distr = prepare_mint_sample()
     df_token_params = prepare_token_params_sample()
+    df_initial_params = prepare_initial_params_sample()
+    print('k')

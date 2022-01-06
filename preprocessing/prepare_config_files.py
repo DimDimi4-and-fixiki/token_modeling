@@ -20,6 +20,10 @@ def prepare_mint_sample():
         logging.critical(f"Config file in path={sample_path} is not found")
         return
 
+    numeric_columns = df.columns[1:]
+    for col in numeric_columns:
+        df[col] = df[col].astype('int64')
+
     # Save and return the result
     save_file(result_path, df, encoding='utf8')
     return df
@@ -62,9 +66,17 @@ def prepare_initial_params_sample():
     cols_mapper = {
         'Темп роста оборота в год': 'turnover_rate',
         'Начальный оборот, $': 'turnover',
-        'Начальное число инвесторов': 'investors_num',
+        'Начальное число инвесторов типа Seed': 'investors_seed_num',
+        'Начальное число инвесторов типа Private Sale': 'investors_private_sale_num',
+        'Начальное число инвесторов типа Public Sale': 'investors_public_sale_num',
+        'Начальное число инвесторов типа Team': 'investors_team_num',
+        'Начальное число инвесторов типа Community': 'investors_community_num',
+        'Начальное число инвесторов типа Staking Rewards': 'investors_staking_rewards_num',
         'Мат ожидание риска инвестора': 'risk_mu',
-        'Стандартное отклонение риска инвестора': 'risk_std'
+        'Стандартное отклонение риска инвестора': 'risk_std',
+        'Число месяцев для моделирования': 'months_num',
+        'Начальное число токенов типа Seed в SBPool': 'tokens_seed_num_sb_pool',
+        'Начальное число токенов типа Community в SBPool': 'tokens_community_num_sb_pool'
     }
     df.rename(columns=cols_mapper, inplace=True)
 

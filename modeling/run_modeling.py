@@ -1,24 +1,82 @@
+"""
+    0. Imports of modules
+"""
+
 import pandas as pd
 import numpy as np
-from preprocessing.prepare_config_files import prepare_token_params_sample, prepare_initial_params_sample
+from preprocessing.prepare_config_files import prepare_token_params_sample, prepare_initial_params_sample, prepare_mint_sample
 from utilities.py_tools import log, get_turnover_distribution
 from models.investors import Investor
 from models.farms import Farm
+from utilities.modelling_tools import create_investors, sell_tokens, get_mint_distribution_by_day
 
+
+"""
+    1. Constants for modelling
+"""
 
 # Read DataFrame with initial Params
 df_initial_params = prepare_initial_params_sample()
+df_mint_distr = prepare_mint_sample()
 
 # Params for risk coefficient distribution
 MU, SIGMA = float(df_initial_params['risk_mu'].values[0]), float(df_initial_params['risk_std'].values[0])
 
-# Number of investors
-NUM_INVESTORS = int(df_initial_params['investors_num'].values[0])
+# Number of months and years to run modelling
+NUM_MONTHS = int(df_initial_params['months_num'].values[0])
+NUM_YEARS = NUM_MONTHS // 12 + 1
 
+# Modelling parameters dictionary
+PARAMS_MODELLING = {
+    'num_months': NUM_MONTHS,
+    'mu': MU,
+    'sigma': SIGMA
+}
+
+# Number of investors for different types
+NUM_INVESTORS_SEED = int(df_initial_params['investors_seed_num'].values[0])
+NUM_INVESTORS_PRIVATE_SALE = int(df_initial_params['investors_private_sale_num'].values[0])
+NUM_INVESTORS_PUBLIC_SALE = int(df_initial_params['investors_public_sale_num'].values[0])
+NUM_INVESTORS_TEAM = int(df_initial_params['investors_team_num'].values[0])
+NUM_INVESTORS_COMMUNITY = int(df_initial_params['investors_community_num'].values[0])
+NUM_INVESTORS_STAKING_REWARDS = int(df_initial_params['investors_staking_rewards_num'].values[0])
+
+
+PARAMS_INVESTORS = {
+    'Seed': NUM_INVESTORS_SEED,
+    'Private sale': NUM_INVESTORS_PRIVATE_SALE,
+    'Public sale': NUM_INVESTORS_PUBLIC_SALE,
+    'Team': NUM_INVESTORS_TEAM,
+    'Community': NUM_INVESTORS_COMMUNITY,
+    'Staking rewards': NUM_INVESTORS_STAKING_REWARDS
+}
 # Turnover parameters
 TURNOVER, TURNOVER_RATE = float(df_initial_params['turnover'].values[0]), float(df_initial_params['turnover_rate'].values[0])
 
-turnover_distr = get_turnover_distribution(turnover=TURNOVER, turnover_rate=TURNOVER_RATE, num_years=3)
-investor = Investor(risk_coefficient=0.1, months_num=48)
+# Distribution of the turnover
+TURNOVER_DISTRIBUTION = get_turnover_distribution(turnover=TURNOVER, turnover_rate=TURNOVER_RATE, num_years=NUM_YEARS)
+
+
+# Number of tokens in SbPool
+NUM_SEED_TOKENS_SB_POOL = int(df_initial_params['tokens_seed_num_sb_pool'].values[0])
+NUM_COMMUNITY_TOKENS_SB_POOL = int(df_initial_params['tokens_community_num_sb_pool'].values[0])
+
+# State of the system: 1, 2 or 3
+state = 1
+
+# Get dictionary with Investor objects for all groups
+investors = create_investors(PARAMS_INVESTORS, PARAMS_MODELLING)
+
+# Get tokens that would be released in a current day
+params_tokens = get_mint_distribution_by_day(mint_distr=df_mint_distr, day=1)
+
+# Take away tokens that are put in SbPool
+params_tokens['Seed'] -= NUM_SEED_TOKENS_SB_POOL
+params_tokens['Community'] -= NUM_COMMUNITY_TOKENS_SB_POOL
+
+
+sell_tokens(investors=investors, params_tokens=params_tokens, day=1)
+
 sb_pool = Farm()
+sb_pool.add_tokens(token_type='Seed', quantity=NUM_SEED_TOKENS_SB_POOL, day=1)
 log("Token params sample is loaded")

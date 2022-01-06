@@ -3,6 +3,8 @@ import gc
 from datetime import datetime
 import json
 import logging
+
+import numpy
 import pandas as pd
 import numpy as np
 import sys
@@ -134,5 +136,33 @@ def get_turnover_distribution(turnover, turnover_rate, num_years, growth_type='l
     return turnover_distr
 
 
+def get_distribution_by_sum(sum: int, size: int):
+
+    # Generate random distribution with .sum() ~= sum
+    l = numpy.ones(size)
+    distr = np.random.dirichlet(l)
+    distr *= sum
+    distr = np.round(distr, 0)
+    distr = distr.astype(int)
+
+    # Add +1 or -1 to the elements to get needed sum
+    delta = abs(sum - distr.sum())
+    indexes = numpy.random.randint(size, size=delta)
+
+    for index in indexes:
+        if distr.sum() < sum:
+            distr[index] += 1
+        elif distr.sum() < sum:
+            distr[index] -= 1
+    return distr
 
 
+def get_month_by_day(day: int) -> int:
+    """
+    Gets month number by a day number, months start from zero
+    :param day: number of the day
+    """
+    if day == 0:
+        return 0
+    else:
+        return (day - 1) // 30

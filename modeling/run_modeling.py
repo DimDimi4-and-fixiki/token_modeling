@@ -50,6 +50,7 @@ PARAMS_INVESTORS = {
     'Community': NUM_INVESTORS_COMMUNITY,
     'Staking rewards': NUM_INVESTORS_STAKING_REWARDS
 }
+
 # Turnover parameters
 TURNOVER, TURNOVER_RATE = float(df_initial_params['turnover'].values[0]), float(df_initial_params['turnover_rate'].values[0])
 
@@ -60,6 +61,16 @@ TURNOVER_DISTRIBUTION = get_turnover_distribution(turnover=TURNOVER, turnover_ra
 # Number of tokens in SbPool
 NUM_SEED_TOKENS_SB_POOL = int(df_initial_params['tokens_seed_num_sb_pool'].values[0])
 NUM_COMMUNITY_TOKENS_SB_POOL = int(df_initial_params['tokens_community_num_sb_pool'].values[0])
+
+# Token parameters for SbPool
+PARAMS_TOKENS_SB_POOL = {
+    'Seed': NUM_SEED_TOKENS_SB_POOL,
+    'Community': NUM_COMMUNITY_TOKENS_SB_POOL
+}
+
+# Initialize Sb Pool object with Seed and Community tokens
+sb_pool = Farm()
+sb_pool.add_tokens(params_tokens=PARAMS_TOKENS_SB_POOL, day=1)
 
 # State of the system: 1, 2 or 3
 state = 1
@@ -77,6 +88,5 @@ params_tokens['Community'] -= NUM_COMMUNITY_TOKENS_SB_POOL
 
 sell_tokens(investors=investors, params_tokens=params_tokens, day=1)
 
-sb_pool = Farm()
-sb_pool.add_tokens(token_type='Seed', quantity=NUM_SEED_TOKENS_SB_POOL, day=1)
+
 log("Token params sample is loaded")

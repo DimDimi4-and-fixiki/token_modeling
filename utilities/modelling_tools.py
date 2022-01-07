@@ -55,7 +55,13 @@ def get_mint_distribution_by_day(mint_distr: pd.DataFrame, day: int) -> dict:
     if (day - 1) % 30 == 0:
         num_month = get_month_by_day(day=day)
 
-        # todo: handle case: num_month > DataFrame index
+        # Get all numbers of months from mint distribution
+        cols_months = mint_distr.columns[1:].astype(int)
+
+        # If current month > maximum month in mint distribution
+        if cols_months.max() < num_month:
+            return res_distr
+
         df = mint_distr[['Token_type', num_month]].copy(deep=True).to_dict()
 
         # Get token types and token amounts from DataFrame

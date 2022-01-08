@@ -51,17 +51,13 @@ def sell_tokens(investors: dict, params_tokens: dict, day: int):
                 investor.add_tokens(day=day, num_tokens=n_tokens)
 
 
-def get_mint_distribution_by_day(mint_distr: pd.DataFrame, day: int) -> dict:
+def get_mint_distribution_by_month(mint_distr: pd.DataFrame, num_month: int) -> dict:
 
     # Create zeroes dictionary with all tokens types
     res_distr = {}
     types = mint_distr['Token_type'].unique()
     for t in types:
         res_distr[t] = 0
-
-    # If day is the first day in month
-    if (day - 1) % 30 == 0:
-        num_month = get_month_by_day(day=day)
 
         # Get all numbers of months from mint distribution
         cols_months = mint_distr.columns[1:].astype(int)

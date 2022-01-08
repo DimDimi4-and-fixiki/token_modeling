@@ -8,7 +8,7 @@ from preprocessing.prepare_config_files import prepare_token_params_sample, prep
 from utilities.py_tools import log, get_turnover_distribution
 from models.investors import Investor
 from models.farms import Farm
-from utilities.modelling_tools import create_investors, sell_tokens, get_mint_distribution_by_day
+from utilities.modelling_tools import create_investors, sell_tokens, get_mint_distribution_by_month
 
 
 """
@@ -81,16 +81,23 @@ state = 1
 # Get dictionary with Investor objects for all groups
 investors = create_investors(PARAMS_INVESTORS, PARAMS_MODELLING)
 
-# Get tokens that would be released in a current day
-params_tokens = get_mint_distribution_by_day(mint_distr=df_mint_distr, day=1)
+# Tokens that we are not modelling now
+TOKENS_EXCLUDED = ['Staking rewards', 'Community']
 
-# Take away tokens that are put in SbPool
-params_tokens['Seed'] -= NUM_SEED_TOKENS_SB_POOL
-params_tokens['Community'] -= NUM_COMMUNITY_TOKENS_SB_POOL
+for num_month in range(0, NUM_MONTHS + 1):
+    # Get tokens that would be released during the current month
+    params_tokens = get_mint_distribution_by_month(mint_distr=df_mint_distr, num_month=num_month)
 
-# for month in range(0, NUM_MONTHS):
-#
-#     for day in range(1, 30 + 1):
+    # In a month = 0, we put some tokens in SbPool
+    if num_month == 0:
+        # Take away tokens that are put in SbPool
+        params_tokens['Seed'] -= NUM_SEED_TOKENS_SB_POOL
+        params_tokens['Community'] -= NUM_COMMUNITY_TOKENS_SB_POOL
+
+    # todo: Get mint distribution by days in a month
+    for day in range(1, 30 + 1):
+        # todo: for each day share tokens between investors
+        pass
 
 
 sell_tokens(investors=investors, params_tokens=params_tokens, day=1)

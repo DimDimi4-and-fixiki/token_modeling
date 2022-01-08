@@ -23,11 +23,11 @@ class Investor:
         # Parameters of tokens
         cols_tokens = ['Token_type', 'Num', 'Initial_price', 'SbPool_flag', 'DivFarm_flag']
         self.df_tokens = pd.DataFrame(columns=cols_tokens)
-        self.df_tokens['Token_type'] = [self.group]
+        self.df_tokens['Token_type'] = token_types
 
         # Add number of month to tokens DataFrame
-        months_data = {'Month_of_purchase': [i for i in range(0, num_months + 1)]}
-        df_months = pd.DataFrame(data=months_data)
+        days_data = {'Day_of_purchase': [i for i in range(1, (num_months + 1) * 30)]}
+        df_months = pd.DataFrame(data=days_data)
         self.df_tokens = pd.merge(self.df_tokens, df_months, how='cross')
 
         # Fill null values
@@ -36,6 +36,5 @@ class Investor:
         self.df_tokens['Num'].fillna(0, inplace=True)
 
     def add_tokens(self, num_tokens: int, day: int):
-        month = get_month_by_day(day)
-        self.df_tokens.loc[self.df_tokens['Month_of_purchase'] == month, ['Num']] += num_tokens
+        self.df_tokens.loc[self.df_tokens['Day_of_purchase'] == day, ['Num']] += num_tokens
 

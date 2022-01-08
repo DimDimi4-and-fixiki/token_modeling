@@ -30,17 +30,25 @@ def sell_tokens(investors: dict, params_tokens: dict, day: int):
 
     # Loop through all groups of investors
     for group in params_tokens.keys():
-        investors_group = investors[group]
-        num_tokens = params_tokens[group]
-        num_investors = len(investors_group)
 
-        # Get distribution of tokens between investors
-        distr_tokens = get_distribution_by_sum(sum=num_tokens, size=num_investors)
+        # todo: Handle Staking Rewards tokens and Community tokens
 
-        # Give tokens to investors
-        for index, investor in enumerate(investors_group):
-            n_tokens = distr_tokens[index]
-            investor.add_tokens(day=day, num_tokens=n_tokens)
+        # Types of investors, which we don't include now
+        excluded_tokens = ['Staking rewards', 'Community']
+
+        # Sell tokens for all groups of investors
+        if group not in excluded_tokens:
+            investors_group = investors[group]
+            num_tokens = params_tokens[group]
+            num_investors = len(investors_group)
+
+            # Get distribution of tokens between investors
+            distr_tokens = get_distribution_by_sum(sum=num_tokens, size=num_investors)
+
+            # Give tokens to investors
+            for index, investor in enumerate(investors_group):
+                n_tokens = distr_tokens[index]
+                investor.add_tokens(day=day, num_tokens=n_tokens)
 
 
 def get_mint_distribution_by_day(mint_distr: pd.DataFrame, day: int) -> dict:

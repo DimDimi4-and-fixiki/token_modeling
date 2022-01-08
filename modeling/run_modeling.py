@@ -39,7 +39,6 @@ NUM_INVESTORS_PRIVATE_SALE = int(df_initial_params['investors_private_sale_num']
 NUM_INVESTORS_PUBLIC_SALE = int(df_initial_params['investors_public_sale_num'].values[0])
 NUM_INVESTORS_TEAM = int(df_initial_params['investors_team_num'].values[0])
 NUM_INVESTORS_COMMUNITY = int(df_initial_params['investors_community_num'].values[0])
-NUM_INVESTORS_STAKING_REWARDS = int(df_initial_params['investors_staking_rewards_num'].values[0])
 
 
 PARAMS_INVESTORS = {
@@ -47,12 +46,16 @@ PARAMS_INVESTORS = {
     'Private sale': NUM_INVESTORS_PRIVATE_SALE,
     'Public sale': NUM_INVESTORS_PUBLIC_SALE,
     'Team': NUM_INVESTORS_TEAM,
-    'Community': NUM_INVESTORS_COMMUNITY,
-    'Staking rewards': NUM_INVESTORS_STAKING_REWARDS
+
+    # todo: Community investors are not included now
+    # 'Community': NUM_INVESTORS_COMMUNITY,
 }
 
 # Turnover parameters
 TURNOVER, TURNOVER_RATE = float(df_initial_params['turnover'].values[0]), float(df_initial_params['turnover_rate'].values[0])
+
+# Percent of turnover that is paid as dividends
+PERCENT_DIVIDENDS = float(df_initial_params['dividends_percent'].values[0])
 
 # Distribution of the turnover
 TURNOVER_DISTRIBUTION = get_turnover_distribution(turnover=TURNOVER, turnover_rate=TURNOVER_RATE, num_years=NUM_YEARS)
@@ -85,8 +88,12 @@ params_tokens = get_mint_distribution_by_day(mint_distr=df_mint_distr, day=1)
 params_tokens['Seed'] -= NUM_SEED_TOKENS_SB_POOL
 params_tokens['Community'] -= NUM_COMMUNITY_TOKENS_SB_POOL
 
+# for month in range(0, NUM_MONTHS):
+#
+#     for day in range(1, 30 + 1):
+
 
 sell_tokens(investors=investors, params_tokens=params_tokens, day=1)
-
+sb_pool.update(day=1)
 
 log("Token params sample is loaded")

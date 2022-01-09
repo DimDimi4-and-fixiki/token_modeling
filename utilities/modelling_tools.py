@@ -28,13 +28,12 @@ def create_investors(params_investors: dict, params_modelling: dict) -> dict:
 
 def sell_tokens(investors: dict, params_tokens: dict, day: int):
 
+    # todo: Handle Staking Rewards tokens and Community tokens
+    # Types of investors, which we don't include now
+    excluded_tokens = ['Staking rewards', 'Community']
+
     # Loop through all groups of investors
     for group in params_tokens.keys():
-
-        # todo: Handle Staking Rewards tokens and Community tokens
-
-        # Types of investors, which we don't include now
-        excluded_tokens = ['Staking rewards', 'Community']
 
         # Sell tokens for all groups of investors
         if group not in excluded_tokens:
@@ -48,24 +47,26 @@ def sell_tokens(investors: dict, params_tokens: dict, day: int):
             # Give tokens to investors
             for index, investor in enumerate(investors_group):
                 n_tokens = distr_tokens[index]
-                investor.add_tokens(day=day, num_tokens=n_tokens)
+                dict_tokens = {group: n_tokens}
+                investor.add_tokens(day=day, params_tokens=dict_tokens)
 
 
 def get_mint_distribution_by_month(mint_distr: pd.DataFrame, num_month: int) -> dict:
 
     # Create zeroes dictionary with all tokens types
-    res_distr = {}
     types = mint_distr['Token_type'].unique()
+    res_distr = {}
     for t in types:
         res_distr[t] = 0
 
-        # Get all numbers of months from mint distribution
-        cols_months = mint_distr.columns[1:].astype(int)
+    # Get all numbers of months from mint distribution
+    cols_months = mint_distr.columns[1:].astype(int)
 
-        # If current month > maximum month in mint distribution
-        if cols_months.max() < num_month:
-            return res_distr
+    # If current month > maximum month in mint distribution
+    if cols_months.max() < num_month:
+        return res_distr
 
+    for t in types:
         df = mint_distr[['Token_type', num_month]].copy(deep=True).to_dict()
 
         # Get token types and token amounts from DataFrame

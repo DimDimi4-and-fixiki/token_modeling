@@ -74,6 +74,7 @@ PARAMS_TOKENS_SB_POOL = {
 
 # Initialize Sb Pool object with Seed and Community tokens
 sb_pool = Farm()
+div_farm = Farm()
 sb_pool.add_tokens(params_tokens=PARAMS_TOKENS_SB_POOL, day=1)
 
 # State of the system: 1, 2 or 3
@@ -103,12 +104,12 @@ for num_month in range(0, NUM_MONTHS + 1):
 
     distribution_tokens_days = distribute_tokens_by_days(params_tokens)
     for day in range(1, 30 + 1):
+
+        # Sell tokens to investors
         distribution_tokens = get_tokens_distribution_by_day(distribution_tokens_days, day)
         sell_tokens(investors=investors, params_tokens=distribution_tokens, day=day)
-        print('heh')
 
 
-sell_tokens(investors=investors, params_tokens=params_tokens, day=1)
-sb_pool.update(day=1)
+    sb_pool.update(day=1)
 
 log("Token params sample is loaded")

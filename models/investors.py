@@ -1,3 +1,5 @@
+from random import random
+
 import pandas as pd
 import numpy as np
 from preprocessing.prepare_config_files import prepare_token_params_sample
@@ -13,6 +15,7 @@ class Investor:
 
         # Risk coefficient of the investor
         self.risk_coefficient = kwargs.get('risk_coefficient', None)
+        self.activity_coefficient = random.random()
         self.group = kwargs.get('group', 'Seed')
 
         if self.group not in token_types:
@@ -20,7 +23,7 @@ class Investor:
 
         num_months = kwargs.get('num_months', 48)
 
-        # Parameters of tokens
+        # Create DataFrame with parameters of tokens
         cols_tokens = ['Token_type', 'Num', 'Initial_price', 'SbPool_flag', 'DivFarm_flag']
         self.df_tokens = pd.DataFrame(columns=cols_tokens)
         self.df_tokens['Token_type'] = token_types
@@ -35,6 +38,16 @@ class Investor:
         self.df_tokens['SbPool_flag'].fillna(False, inplace=True)
         self.df_tokens['Num'].fillna(0, inplace=True)
 
-    def add_tokens(self, num_tokens: int, day: int):
-        self.df_tokens.loc[self.df_tokens['Day_of_purchase'] == day, ['Num']] += num_tokens
+    def add_tokens(self, params_tokens: dict, day: int):
+
+        groups_tokens = params_tokens.keys()
+
+        # Go though all groups of tokens
+        for group in groups_tokens:
+
+            # Get number of tokens for the group and add them to the investor
+            num_tokens = params_tokens[group]
+            if num_tokens != 0:
+                self.df_tokens.loc[(self.df_tokens['Day_of_purchase'] == day) & (self.df_tokens['Token_type'] == group),
+                                   ['Num']] += num_tokens
 

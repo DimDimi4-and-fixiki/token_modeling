@@ -80,5 +80,31 @@ def get_mint_distribution_by_month(mint_distr: pd.DataFrame, num_month: int) -> 
         return res_distr
 
 
+def distribute_tokens_by_days(mint_distr: dict, num_days=30) -> dict:
+
+    # Get all groups of tokens
+    groups_tokens = mint_distr.keys()
+
+    # Empty dictionary for the result
+    res = {}
+
+    for group in groups_tokens:
+        num_tokens = mint_distr[group]
+        res[group] = get_distribution_by_sum(sum=num_tokens, size=num_days)
+
+    return res
+
+
+def get_tokens_distribution_by_day(distribution_tokens_days: dict, day: int) -> dict:
+
+    res = {}
+    groups_tokens = distribution_tokens_days.keys()
+
+    for group in groups_tokens:
+
+        index = day - 1
+        res[group] = distribution_tokens_days[group][index]
+
+    return res
 
 

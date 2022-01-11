@@ -8,6 +8,8 @@ df_token_types = df_token_params['Token_type']
 
 class Farm:
     def __init__(self, **kwargs):
+
+        self.type_farm = kwargs.get('type', 'SbPool')
         num_days = kwargs.get('days_num', 60 * 30)
 
         # Add 4 additional columns for days to get

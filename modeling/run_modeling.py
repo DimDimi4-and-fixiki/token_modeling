@@ -108,7 +108,7 @@ for num_month in range(0, NUM_MONTHS + 1):
         # Sell tokens to investors
         distribution_tokens = get_tokens_distribution_by_day(distribution_tokens_days, day)
         sell_tokens(investors=investors, params_tokens=distribution_tokens, day=day)
-
+    print('check')
 
     sb_pool.update(day=1)
 

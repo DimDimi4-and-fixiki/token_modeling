@@ -3,10 +3,10 @@ import numpy as np
 
 from utilities.py_tools import get_distribution_by_sum, get_month_by_day
 from models.investors import Investor
+from models.farms import Farm
 
 
 def create_investors(params_investors: dict, params_modelling: dict) -> dict:
-
     # Dictionary for the results
     investors = {}
 
@@ -27,7 +27,6 @@ def create_investors(params_investors: dict, params_modelling: dict) -> dict:
 
 
 def sell_tokens(investors: dict, params_tokens: dict, day: int):
-
     # todo: Handle Staking Rewards tokens and Community tokens
     # Types of investors, which we don't include now
     excluded_tokens = ['Staking rewards', 'Community']
@@ -52,7 +51,6 @@ def sell_tokens(investors: dict, params_tokens: dict, day: int):
 
 
 def get_mint_distribution_by_month(mint_distr: pd.DataFrame, num_month: int) -> dict:
-
     # Create zeroes dictionary with all tokens types
     types = mint_distr['Token_type'].unique()
     res_distr = {}
@@ -82,7 +80,6 @@ def get_mint_distribution_by_month(mint_distr: pd.DataFrame, num_month: int) -> 
 
 
 def distribute_tokens_by_days(mint_distr: dict, num_days=30) -> dict:
-
     # Get all groups of tokens
     groups_tokens = mint_distr.keys()
 
@@ -97,15 +94,40 @@ def distribute_tokens_by_days(mint_distr: dict, num_days=30) -> dict:
 
 
 def get_tokens_distribution_by_day(distribution_tokens_days: dict, day: int) -> dict:
-
     res = {}
     groups_tokens = distribution_tokens_days.keys()
 
     for group in groups_tokens:
-
         index = day - 1
         res[group] = distribution_tokens_days[group][index]
 
     return res
+
+
+def transfer_investors(sb_pool: Farm, div_farm: Farm, investors: list,
+                       day: int, div_sb_pool: float, div_div_farm: float):
+
+    """
+    Transfers tokens of investors in a more profitable farm
+    :param sb_pool: SbPool object
+    :param div_farm: DivFarm object
+    :param investors: list with all investors
+    :param investors: number of the current day
+    :param div_sb_pool: number of dividends for SbPool
+    :param div_div_farm: number of dividends for DivFarm
+    """
+
+    # Sort investors in descending order by their coefficients of activity
+    investors_sorted = sorted(investors, key=lambda investor: investor.activity_coefficient, reverse=True)
+
+    for index, investor in enumerate(investors_sorted):
+        num_tokens_sb_pool = sb_pool.get_tokens_amount(day=day)
+        num_tokens_div_farm = div_farm.get_tokens_amount(day=day)
+
+        # If we have no tokens in Div Farm (day = 1 case)
+        if num_tokens_div_farm == 0:
+            investor
+
+
 
 

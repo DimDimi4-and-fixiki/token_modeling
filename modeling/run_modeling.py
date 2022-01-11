@@ -9,7 +9,7 @@ from utilities.py_tools import log, get_turnover_distribution
 from models.investors import Investor
 from models.farms import Farm
 from utilities.modelling_tools import create_investors, sell_tokens, get_mint_distribution_by_month, \
-    distribute_tokens_by_days, get_tokens_distribution_by_day
+    distribute_tokens_by_days, get_tokens_distribution_by_day, transfer_investors
 
 
 """
@@ -73,8 +73,8 @@ PARAMS_TOKENS_SB_POOL = {
 }
 
 # Initialize Sb Pool object with Seed and Community tokens
-sb_pool = Farm()
-div_farm = Farm()
+sb_pool = Farm(type='SbPool')
+div_farm = Farm(type='DivFarm')
 sb_pool.add_tokens(params_tokens=PARAMS_TOKENS_SB_POOL, day=1)
 
 # State of the system: 1, 2 or 3
@@ -108,6 +108,12 @@ for num_month in range(0, NUM_MONTHS + 1):
         # Sell tokens to investors
         distribution_tokens = get_tokens_distribution_by_day(distribution_tokens_days, day)
         sell_tokens(investors=investors, params_tokens=distribution_tokens, day=day)
+
+        transfer_investors(sb_pool=sb_pool, div_sb_pool=300,
+                           div_farm=div_farm, div_div_farm=1000,
+                           dict_investors=investors, day=day,
+                           freeze_peroid=10)
+
     print('check')
 
     sb_pool.update(day=1)

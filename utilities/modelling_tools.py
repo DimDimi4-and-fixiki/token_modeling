@@ -4,6 +4,7 @@ import numpy as np
 from utilities.py_tools import get_distribution_by_sum, get_month_by_day
 from models.investors import Investor
 from models.farms import Farm
+import itertools
 
 
 def create_investors(params_investors: dict, params_modelling: dict) -> dict:
@@ -104,7 +105,10 @@ def get_tokens_distribution_by_day(distribution_tokens_days: dict, day: int) -> 
     return res
 
 
-def transfer_investors(sb_pool: Farm, div_farm: Farm, investors: list,
+def investors_sorter(investor: Investor):
+    return investor.activity_coefficient
+
+def transfer_investors(sb_pool: Farm, div_farm: Farm, dict_investors: dict,
                        day: int, div_sb_pool: float, div_div_farm: float,
                        freeze_peroid: int):
 
@@ -112,14 +116,16 @@ def transfer_investors(sb_pool: Farm, div_farm: Farm, investors: list,
     Transfers tokens of investors in a more profitable farm
     :param sb_pool: SbPool object
     :param div_farm: DivFarm object
-    :param investors: list with all investors
-    :param investors: number of the current day
+    :param dict_investors: dict with all types of investors
+    :param day: number of the current day
     :param div_sb_pool: number of dividends for SbPool
     :param div_div_farm: number of dividends for DivFarm
     """
 
+    investors = list(itertools.chain.from_iterable(dict_investors.values()))
+
     # Sort investors in descending order by their coefficients of activity
-    investors_sorted = sorted(investors, key=lambda investor: investor.activity_coefficient, reverse=True)
+    investors_sorted = sorted(investors, key=investors_sorter, reverse=True)
 
     for index, investor in enumerate(investors_sorted):
         num_tokens_sb_pool = sb_pool.get_tokens_amount(day=day)

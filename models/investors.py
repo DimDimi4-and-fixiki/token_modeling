@@ -62,6 +62,8 @@ class Investor:
         df_active_tokens = self.df_tokens[(self.df_tokens['Day_of_freeze'] <= day - freeze_period)
                                           & (self.df_tokens[flag_farm] == False)]
 
+        # todo: Initial Data Frame is not changed :(
+
         # Mark tokens as transfered to the needed Farm
         df_active_tokens[flag_farm] = True
         df_active_tokens['Day_of_freeze'] = day

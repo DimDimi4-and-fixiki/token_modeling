@@ -105,7 +105,8 @@ def get_tokens_distribution_by_day(distribution_tokens_days: dict, day: int) -> 
 
 
 def transfer_investors(sb_pool: Farm, div_farm: Farm, investors: list,
-                       day: int, div_sb_pool: float, div_div_farm: float):
+                       day: int, div_sb_pool: float, div_div_farm: float,
+                       freeze_peroid: int):
 
     """
     Transfers tokens of investors in a more profitable farm
@@ -126,8 +127,20 @@ def transfer_investors(sb_pool: Farm, div_farm: Farm, investors: list,
 
         # If we have no tokens in Div Farm (day = 1 case)
         if num_tokens_div_farm == 0:
-            investor
+            investor.transfer_active_tokens(farm=div_farm, day=day, freeze_period=freeze_peroid)
+            continue
 
+        # Count dividends / (number of tokens) for both farms
+        ratio_div_farm = div_div_farm / num_tokens_div_farm
+        ratio_sb_pool = div_sb_pool / num_tokens_sb_pool
+
+        # Transfer all active tokens of investor to a more profitable farm
+        if ratio_div_farm > ratio_sb_pool:
+            investor.transfer_active_tokens(farm=div_farm, day=day, freeze_period=freeze_peroid)
+            continue
+        else:
+            investor.transfer_active_tokens(farm=sb_pool, day=day, freeze_period=freeze_peroid)
+            continue
 
 
 

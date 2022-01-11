@@ -60,7 +60,9 @@ class Investor:
 
         # Get DataFrame of active tokens
         df_active_tokens = self.df_tokens[(self.df_tokens['Day_of_freeze'] <= day - freeze_period)
-                                          & self.df_tokens[flag_farm] == False]
+                                          & (self.df_tokens[flag_farm] == False)]
+
+        # Mark tokens as transfered to the needed Farm
         df_active_tokens[flag_farm] = True
         df_active_tokens['Day_of_freeze'] = day
 
@@ -68,4 +70,7 @@ class Investor:
         params_active_tokens = {}
         for group in token_types:
             params_active_tokens[group] = df_active_tokens[df_active_tokens['Token_type'] == group]['Num'].sum()
+
+        # Add all active tokens to the Farm
+        farm.add_tokens(params_tokens=params_active_tokens, day=day)
 

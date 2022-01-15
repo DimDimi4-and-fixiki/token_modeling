@@ -57,16 +57,22 @@ class Investor:
 
         # Name of column for needed Farm
         flag_farm = 'SbPool_flag' if farm.type_farm == 'SbPool' else 'DivFarm_flag'
+        flag_opposite_farm = 'DivFarm_flag' if flag_farm == 'SbPool_flag' else 'SbPool_flag'
 
         # Get DataFrame of active tokens
         df_active_tokens = self.df_tokens[(self.df_tokens['Day_of_freeze'] <= day - freeze_period)
-                                          & (self.df_tokens[flag_farm] == False)]
+                                          & (self.df_tokens[flag_farm] == False) &
+                                          (self.df_tokens['Day_of_purchase'] <= day)]
 
-        # todo: Initial Data Frame is not changed :(
-
-        # Mark tokens as transfered to the needed Farm
+        # Mark tokens as transferred to the needed Farm
+        df_active_tokens[flag_opposite_farm] = False
         df_active_tokens[flag_farm] = True
         df_active_tokens['Day_of_freeze'] = day
+
+        # Change initial Data Frame with investors tokens
+        self.df_tokens[(self.df_tokens['Day_of_freeze'] <= day - freeze_period)
+                       & (self.df_tokens[flag_farm] == False) &
+                       (self.df_tokens['Day_of_purchase'] <= day)] = df_active_tokens
 
         # Fill dictionary with active tokens parameters
         params_active_tokens = {}

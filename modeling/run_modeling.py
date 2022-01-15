@@ -75,7 +75,7 @@ PARAMS_TOKENS_SB_POOL = {
 # Initialize Sb Pool object with Seed and Community tokens
 sb_pool = Farm(type='SbPool')
 div_farm = Farm(type='DivFarm')
-sb_pool.add_tokens(params_tokens=PARAMS_TOKENS_SB_POOL, day=1)
+sb_pool.add_tokens(params_tokens=PARAMS_TOKENS_SB_POOL, day=1, currency_rate=0.01)
 
 # State of the system: 1, 2 or 3
 state = 1
@@ -86,7 +86,7 @@ investors = create_investors(PARAMS_INVESTORS, PARAMS_MODELLING)
 # Tokens that we are not modelling now
 TOKENS_EXCLUDED = ['Staking rewards', 'Community']
 
-for num_month in range(0, NUM_MONTHS + 1):
+for num_month in range(0, 2):
     # Get tokens that would be released during the current month
     params_tokens = get_mint_distribution_by_month(mint_distr=df_mint_distr, num_month=num_month)
 
@@ -105,17 +105,35 @@ for num_month in range(0, NUM_MONTHS + 1):
     distribution_tokens_days = distribute_tokens_by_days(params_tokens)
     for day in range(1, 30 + 1):
 
+        # Calculate number of the day
+        num_day = num_month * 30 + day
+
         # Sell tokens to investors
         distribution_tokens = get_tokens_distribution_by_day(distribution_tokens_days, day)
-        sell_tokens(investors=investors, params_tokens=distribution_tokens, day=day)
+        sell_tokens(investors=investors, params_tokens=distribution_tokens, day=num_day)
 
-        transfer_investors(sb_pool=sb_pool, div_sb_pool=300,
-                           div_farm=div_farm, div_div_farm=1000,
-                           dict_investors=investors, day=day,
-                           freeze_peroid=10)
+        if state == 1:
 
-    print('check')
+            # Params for calculating dividends
+            sb_pool_rate = 0.25 / 100
+            div_farm_rate = 1 - sb_pool_rate
+            turnover, dividends_rate = TURNOVER_DISTRIBUTION[num_day - 1], 0.3 / 100
 
-    sb_pool.update(day=1)
+            # Calculate dividends for each farm
+            div_sb_pool = turnover * dividends_rate * sb_pool_rate
+            div_div_farm = turnover * dividends_rate * div_farm_rate
+
+            transfer_investors(sb_pool=sb_pool, div_sb_pool=div_sb_pool,
+                               div_farm=div_farm, div_div_farm=div_div_farm,
+                               dict_investors=investors, day=num_day,
+                               freeze_period=10)
+
+            sb_pool.update(day=num_day)
+            div_farm.update(day=num_day)
+
+    print(f'Month {num_month} processed')
+
+
+
 
 log("Token params sample is loaded")

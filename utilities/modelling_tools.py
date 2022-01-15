@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 
-from utilities.py_tools import get_distribution_by_sum, get_month_by_day
+from utilities.py_tools import get_distribution_by_sum, get_month_by_day, log
 from models.investors import Investor
 from models.farms import Farm
 import itertools
@@ -108,12 +108,14 @@ def get_tokens_distribution_by_day(distribution_tokens_days: dict, day: int) -> 
 def investors_sorter(investor: Investor):
     return investor.activity_coefficient
 
+
 def transfer_investors(sb_pool: Farm, div_farm: Farm, dict_investors: dict,
                        day: int, div_sb_pool: float, div_div_farm: float,
-                       freeze_peroid: int):
+                       freeze_period: int):
 
     """
     Transfers tokens of investors in a more profitable farm
+    :param freeze_period: number of days when token is frozen
     :param sb_pool: SbPool object
     :param div_farm: DivFarm object
     :param dict_investors: dict with all types of investors
@@ -122,6 +124,8 @@ def transfer_investors(sb_pool: Farm, div_farm: Farm, dict_investors: dict,
     :param div_div_farm: number of dividends for DivFarm
     """
 
+
+    dict_investors = {'Seed': dict_investors['Seed']}
     investors = list(itertools.chain.from_iterable(dict_investors.values()))
 
     # Sort investors in descending order by their coefficients of activity
@@ -133,19 +137,23 @@ def transfer_investors(sb_pool: Farm, div_farm: Farm, dict_investors: dict,
 
         # If we have no tokens in Div Farm (day = 1 case)
         if num_tokens_div_farm == 0:
-            investor.transfer_active_tokens(farm=div_farm, day=day, freeze_period=freeze_peroid)
+            investor.transfer_active_tokens(farm=div_farm, day=day, freeze_period=freeze_period)
             continue
 
         # Count dividends / (number of tokens) for both farms
         ratio_div_farm = div_div_farm / num_tokens_div_farm
         ratio_sb_pool = div_sb_pool / num_tokens_sb_pool
 
+        log(f'------ Taking decision for investor with index={index} -------------')
+        log(f'Day={day}, tokens in sb_pool={num_tokens_sb_pool}, div_sb_pool={div_sb_pool}, ratio_sb_pool={ratio_sb_pool}')
+        log(f'Day={day}, tokens in div_farm={num_tokens_div_farm}, div_div_farm={div_div_farm}, ratio_div_farm={ratio_div_farm}')
+
         # Transfer all active tokens of investor to a more profitable farm
         if ratio_div_farm > ratio_sb_pool:
-            investor.transfer_active_tokens(farm=div_farm, day=day, freeze_period=freeze_peroid)
+            investor.transfer_active_tokens(farm=div_farm, day=day, freeze_period=freeze_period)
             continue
         else:
-            investor.transfer_active_tokens(farm=sb_pool, day=day, freeze_period=freeze_peroid)
+            investor.transfer_active_tokens(farm=sb_pool, day=day, freeze_period=freeze_period)
             continue
 
 

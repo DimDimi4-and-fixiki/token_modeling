@@ -92,6 +92,18 @@ class Farm:
                     num_bnb = num_tokens * currency_rate
                     self.tokens.loc[self.tokens['Token_type'] == 'BNB', [day]] += num_bnb
 
+    def __add_smarty_dividends(self, num_tokens: float, day:int, type_dividends: str):
+        """
+        Private method for adding Smarty tokens to dividends
+        :param num_tokens: number of tokens
+        :param day: number of the current day
+        :param type_dividends: dividends type, one of ('Turnover', 'Minted')
+        :return:
+        """
+
+        # Updates dividends DataFrame
+        self.dividends.loc[self.dividends['Dividends_type'] == type_dividends, [day]] += num_tokens
+
     def add_dividends(self, day: int, bnb_smarty_rate=None, num_tokens=None, type_operation='bnb', type_dividends='Turnover', index_revenue=None):
         """
         :param bnb_smarty_rate: current BNB / Smarty rate
@@ -106,7 +118,7 @@ class Farm:
 
         # If we want to add Smarty tokens
         if type_operation == 'smarty':
-            self.dividends[self.dividends['Dividends_type'] == type_dividends][day] += num_tokens
+            self.__add_smarty_dividends(day=day, num_tokens=num_tokens, type_dividends=type_dividends)
 
         # Add a specified number of BNB tokens
         elif type_operation == 'bnb':
@@ -116,7 +128,7 @@ class Farm:
                 bnb_smarty_rate = self.get_currency_rate(day=day)
 
             num_smarty = num_tokens / bnb_smarty_rate
-            self.dividends.loc[self.dividends['Dividends_type'] == type_dividends, [day]] += num_smarty
+            self.__add_smarty_dividends(day=day, num_tokens=num_smarty, type_dividends=type_dividends)
 
         elif type_operation == 'index_revenue':
 
@@ -130,7 +142,7 @@ class Farm:
                 # Calculate number of tokens and ad them to dividends
                 delta_index = index_revenue - current_index_revenue
                 num_smarty = delta_index * self.get_tokens_amount(day=day)
-                self.dividends[self.dividends['Dividends_type'] == type_dividends][day] += num_smarty
+                self.__add_smarty_dividends(day=day, num_tokens=num_smarty, type_dividends=type_dividends)
 
     def get_current_dividends(self, day: int) -> float:
         return self.dividends[day].sum()

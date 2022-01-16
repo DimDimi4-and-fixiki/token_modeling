@@ -58,6 +58,10 @@ TURNOVER, TURNOVER_RATE = float(df_initial_params['turnover'].values[0]), float(
 # Percent of turnover that is paid as dividends
 PERCENT_DIVIDENDS = float(df_initial_params['dividends_percent'].values[0])
 
+# Periods of extra mint and dividends payments
+PERIOD_EXTRA_MINT = int(df_initial_params['extra_mint_period'].values[0])
+PERIOD_DIVIDENDS = int(df_initial_params['dividends_period'].values[0])
+
 # Distribution of the turnover
 TURNOVER_DISTRIBUTION = get_turnover_distribution(turnover=TURNOVER, turnover_rate=TURNOVER_RATE, num_years=NUM_YEARS)
 
@@ -111,7 +115,8 @@ for num_month in range(0, 2):
         # Sell tokens to investors
         distribution_tokens = get_tokens_distribution_by_day(distribution_tokens_days, day)
         sell_tokens(investors=investors, params_tokens=distribution_tokens, day=num_day)
-
+        sb_pool.add_dividends(day=num_day, type_operation='bnb', num_tokens=TURNOVER_DISTRIBUTION[num_day-1],
+                              type_dividends='Turnover')
         if state == 1:
 
             # Params for calculating dividends

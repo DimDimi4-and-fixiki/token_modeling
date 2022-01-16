@@ -1,6 +1,6 @@
 import pandas as pd
 from preprocessing.prepare_config_files import prepare_token_params_sample
-
+from utilities.py_tools import log
 
 df_token_params = prepare_token_params_sample()
 df_token_types = df_token_params['Token_type']
@@ -30,6 +30,14 @@ class Farm:
         self.tokens['Token_type'] = types_tokens
         self.tokens.fillna(0, inplace=True)
 
+        # Dividends DataFrame contains only days columns
+        cols_dividends = ['Dividends_type'] + cols_days
+        self.dividends = pd.DataFrame(columns=cols_dividends)
+
+        # Dividends could come from turnover or from minting new tokens
+        self.dividends['Dividends_type'] = pd.Series(['Turnover', 'Minted'])
+        self.dividends.fillna(0, inplace=True)
+
     def get_tokens_amount(self, day: int) -> float:
         """
         Gets total amount of tokens in Farm
@@ -37,14 +45,14 @@ class Farm:
         :return: int, number of tokens
         """
 
-        # Get sum of all Smarty tokens
-        amount = self.tokens[self.tokens['Token_type' != 'BNB']][day].sum()
+        # Get sum of all Smarty tokens in farm
+        amount = self.tokens[self.tokens['Token_type'] != 'BNB'][day].sum()
         return amount
 
     def get_bnb_amount(self, day: int) -> float:
 
         # Get sum of all Smarty tokens
-        amount = self.tokens[self.tokens['Token_type' == 'BNB']][day].sum()
+        amount = self.tokens[self.tokens['Token_type'] == 'BNB'][day].sum()
         return amount
 
     def get_currency_rate(self, day: int) -> float:
@@ -54,8 +62,8 @@ class Farm:
         :return:
         """
 
-        smarty_amount = self.get_tokens_amount()
-        bnb_amount = self.get_bnb_amount()
+        smarty_amount = self.get_tokens_amount(day=day)
+        bnb_amount = self.get_bnb_amount(day=day)
 
         return bnb_amount / smarty_amount
 
@@ -80,9 +88,52 @@ class Farm:
                     if currency_rate is None:
                         currency_rate = self.get_currency_rate(day=day)
 
-                    # Add BNB tokens to the tokens DataFrame
+                    # Add BNB tokens to the tokens DataFrame according to Smarty rate
                     num_bnb = num_tokens * currency_rate
                     self.tokens.loc[self.tokens['Token_type'] == 'BNB', [day]] += num_bnb
+
+    def add_dividends(self, day: int, bnb_smarty_rate=None, num_tokens=None, type_operation='bnb', type_dividends='Turnover', index_revenue=None):
+        """
+        :param bnb_smarty_rate: current BNB / Smarty rate
+        :param num_tokens: number of tokens (Smarty or BNB) to add
+        :param day: number of the current day
+        :param type_operation: type of the operation:
+            1) 'bnb' - add a specified number of BNB tokens (by current BNB / Smarty rate)
+            2) 'smarty' - add a specified number of Smarty tokens
+            3) 'index_revenue' - add BNB tokens to set (dividends / num_tokens) >= min_profit
+        :param index_revenue: minimum profit that we want to set
+        """
+
+        # If we want to add Smarty tokens
+        if type_operation == 'smarty':
+            self.dividends[self.dividends['Dividends_type'] == type_dividends][day] += num_tokens
+
+        # Add a specified number of BNB tokens
+        elif type_operation == 'bnb':
+
+            # To add BNB tokens we convert them to Smarty by current currency rate
+            if bnb_smarty_rate is None:
+                bnb_smarty_rate = self.get_currency_rate(day=day)
+
+            num_smarty = num_tokens / bnb_smarty_rate
+            self.dividends.loc[self.dividends['Dividends_type'] == type_dividends, [day]] += num_smarty
+
+        elif type_operation == 'index_revenue':
+
+            current_index_revenue = self.get_current_dividends() / self.get_tokens_amount()
+
+            # If current revenue index is big enough, we don't add tokens
+            if current_index_revenue >= index_revenue:
+                log(f'On day={day} revenue index in {self.type_farm} = {current_index_revenue} > {index_revenue}')
+                return
+            else:
+                # Calculate number of tokens and ad them to dividends
+                delta_index = index_revenue - current_index_revenue
+                num_smarty = delta_index * self.get_tokens_amount(day=day)
+                self.dividends[self.dividends['Dividends_type'] == type_dividends][day] += num_smarty
+
+    def get_current_dividends(self, day: int) -> float:
+        return self.dividends[day].sum()
 
     def update(self, day: int):
         """

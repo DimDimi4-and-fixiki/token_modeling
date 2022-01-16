@@ -82,7 +82,10 @@ def prepare_initial_params_sample():
         'Число месяцев для моделирования': 'months_num',
 
         'Начальное число токенов типа Seed в SBPool': 'tokens_seed_num_sb_pool',
-        'Начальное число токенов типа Community в SBPool': 'tokens_community_num_sb_pool'
+        'Начальное число токенов типа Community в SBPool': 'tokens_community_num_sb_pool',
+
+        'Периодичность дочеканивания монет, дней': 'extra_mint_period',
+        'Периодичность раздачи дивидендов, дней': 'dividends_period'
     }
     df.rename(columns=cols_mapper, inplace=True)
 

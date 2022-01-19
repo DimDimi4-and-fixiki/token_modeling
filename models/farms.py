@@ -18,6 +18,7 @@ class Farm:
         if self.type_farm == 'SbPool':
             bnb_row = pd.Series(['BNB'])
             types_tokens = types_tokens.append(bnb_row).reindex()
+            self.initial_tokens = kwargs.get('params_tokens', {'Seed': 0})
 
         # Generate list with number of days for modelling
         cols_days = [i for i in range(1, num_days + 5)]
@@ -38,15 +39,21 @@ class Farm:
         self.dividends['Dividends_type'] = pd.Series(['Turnover', 'Minted'])
         self.dividends.fillna(0, inplace=True)
 
-    def get_tokens_amount(self, day: int) -> float:
+    def get_tokens_amount(self, day: int, all=False) -> float:
         """
-        Gets total amount of tokens in Farm
+        Gets total amount of Smarty tokens in Farm
+        :param all: flag if we need to include initial tokens that we put in Farm
         :param day: number of day
         :return: int, number of tokens
         """
 
         # Get sum of all Smarty tokens in farm
         amount = self.tokens[self.tokens['Token_type'] != 'BNB'][day].sum()
+
+        # In SbPool we do not count tokens that we put here at the start
+        if self.type_farm == 'SbPool' and not all:
+            amount -= sum(list(self.initial_tokens.values()))
+
         return amount
 
     def get_bnb_amount(self, day: int) -> float:
@@ -62,7 +69,7 @@ class Farm:
         :return:
         """
 
-        smarty_amount = self.get_tokens_amount(day=day)
+        smarty_amount = self.get_tokens_amount(day=day, all=True)
         bnb_amount = self.get_bnb_amount(day=day)
 
         return bnb_amount / smarty_amount
@@ -104,7 +111,8 @@ class Farm:
         # Updates dividends DataFrame
         self.dividends.loc[self.dividends['Dividends_type'] == type_dividends, [day]] += num_tokens
 
-    def add_dividends(self, day: int, bnb_smarty_rate=None, num_tokens=None, type_operation='bnb', type_dividends='Turnover', index_revenue=None):
+    def add_dividends(self, day: int, bnb_smarty_rate=None, num_tokens=None, type_operation='bnb',
+                      type_dividends='Turnover', index_revenue=None):
         """
         :param bnb_smarty_rate: current BNB / Smarty rate
         :param num_tokens: number of tokens (Smarty or BNB) to add
@@ -112,7 +120,7 @@ class Farm:
         :param type_operation: type of the operation:
             1) 'bnb' - add a specified number of BNB tokens (by current BNB / Smarty rate)
             2) 'smarty' - add a specified number of Smarty tokens
-            3) 'index_revenue' - add BNB tokens to set (dividends / num_tokens) >= min_profit
+            3) 'index_revenue' - add Smarty tokens to set (dividends / num_tokens) >= min_profit
         :param index_revenue: minimum profit that we want to set
         """
 
@@ -132,7 +140,7 @@ class Farm:
 
         elif type_operation == 'index_revenue':
 
-            current_index_revenue = self.get_current_dividends() / self.get_tokens_amount()
+            current_index_revenue = self.get_current_dividends(day=day) / self.get_tokens_amount(day=day)
 
             # If current revenue index is big enough, we don't add tokens
             if current_index_revenue >= index_revenue:

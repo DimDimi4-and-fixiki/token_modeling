@@ -79,6 +79,7 @@ class Investor:
         for group in token_types:
             params_active_tokens[group] = df_active_tokens[df_active_tokens['Token_type'] == group]['Num'].sum()
 
+        # todo: Do minus tokens from current farm
         # Add all active tokens to the Farm
         farm.add_tokens(params_tokens=params_active_tokens, day=day)
 

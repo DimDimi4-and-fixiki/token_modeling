@@ -80,6 +80,7 @@ def prepare_initial_params_sample():
         'Мат ожидание риска инвестора': 'risk_mu',
         'Стандартное отклонение риска инвестора': 'risk_std',
         'Число месяцев для моделирования': 'months_num',
+        'Минимальный порог интереса инвестора': 'min_revenue_index',
 
         'Начальное число токенов типа Seed в SBPool': 'tokens_seed_num_sb_pool',
         'Начальное число токенов типа Community в SBPool': 'tokens_community_num_sb_pool',

@@ -41,6 +41,7 @@ NUM_INVESTORS_PUBLIC_SALE = int(df_initial_params['investors_public_sale_num'].v
 NUM_INVESTORS_TEAM = int(df_initial_params['investors_team_num'].values[0])
 NUM_INVESTORS_COMMUNITY = int(df_initial_params['investors_community_num'].values[0])
 
+MIN_INDEX_REVENUE = float(df_initial_params['min_revenue_index'].values[0])
 
 PARAMS_INVESTORS = {
     'Seed': NUM_INVESTORS_SEED,
@@ -77,9 +78,12 @@ PARAMS_TOKENS_SB_POOL = {
 }
 
 # Initialize Sb Pool object with Seed and Community tokens
-sb_pool = Farm(type='SbPool')
-div_farm = Farm(type='DivFarm')
+sb_pool = Farm(type='SbPool', params_tokens=PARAMS_TOKENS_SB_POOL)
 sb_pool.add_tokens(params_tokens=PARAMS_TOKENS_SB_POOL, day=1, currency_rate=0.01)
+
+# Create Div Farm pool object
+div_farm = Farm(type='DivFarm')
+
 
 # State of the system: 1, 2 or 3
 state = 1
@@ -100,6 +104,7 @@ for num_month in range(0, 2):
 
     # In a month = 0, we put some tokens in SbPool
     if num_month == 0:
+
         # Take away tokens that are put in SbPool
         params_tokens['Seed'] -= NUM_SEED_TOKENS_SB_POOL
 
@@ -124,17 +129,34 @@ for num_month in range(0, 2):
             div_farm_rate = 1 - sb_pool_rate
             turnover, dividends_rate = TURNOVER_DISTRIBUTION[num_day - 1], 0.3 / 100
 
-            # Calculate dividends for each farm
+            # Calculate dividends from turnover for each farm
             div_sb_pool = turnover * dividends_rate * sb_pool_rate
             div_div_farm = turnover * dividends_rate * div_farm_rate
 
-            transfer_investors(sb_pool=sb_pool, div_sb_pool=div_sb_pool,
+            div_farm.add_dividends(day=day, num_tokens=div_div_farm, type_dividends='Turnover')
+            sb_pool.add_dividends(day=day, num_tokens=div_sb_pool, type_dividends='Turnover')
+
+            transfer_investors(sb_pool=sb_pool, div_sb_pool=div_div_farm,
                                div_farm=div_farm, div_div_farm=div_div_farm,
                                dict_investors=investors, day=num_day,
                                freeze_period=10)
 
+            if num_day % PERIOD_EXTRA_MINT == 0:
+                bnb_smarty_rate = sb_pool.get_currency_rate(day=day)
+                div_farm.add_dividends(day=day, index_revenue=MIN_INDEX_REVENUE,
+                                       type_dividends='Minted', type_operation='smarty',
+                                       bnb_smarty_rate=bnb_smarty_rate)
+                sb_pool.add_dividends(day=day, index_revenue=MIN_INDEX_REVENUE,
+                                      type_dividends='Minted', type_operation='smarty',
+                                      bnb_smarty_rate=bnb_smarty_rate)
+                print('a')
+
             sb_pool.update(day=num_day)
             div_farm.update(day=num_day)
+
+
+
+
 
     print(f'Month {num_month} processed')
 

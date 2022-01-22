@@ -86,7 +86,10 @@ def prepare_initial_params_sample():
         'Начальное число токенов типа Community в SBPool': 'tokens_community_num_sb_pool',
 
         'Периодичность дочеканивания монет, дней': 'extra_mint_period',
-        'Периодичность раздачи дивидендов, дней': 'dividends_period'
+        'Периодичность раздачи дивидендов, дней': 'dividends_period',
+
+        'Курс BNB / Smarty': 'bnb_smarty_ratio',
+        'Курс $ / BNB': 'dollar_bnb_ratio'
     }
     df.rename(columns=cols_mapper, inplace=True)
 

@@ -87,9 +87,6 @@ class Farm:
             num_tokens = int(params_tokens[group])
             if num_tokens != 0:
 
-                # Update tokens DataFrame by adding Smarty tokens
-                self.tokens.loc[self.tokens['Token_type'] == group, [day]] += num_tokens
-
                 # If we are adding Smarty to SbPool, we also need to add BNB
                 if self.type_farm == 'SbPool':
                     if currency_rate is None:
@@ -98,6 +95,25 @@ class Farm:
                     # Add BNB tokens to the tokens DataFrame according to Smarty rate
                     num_bnb = num_tokens * currency_rate
                     self.tokens.loc[self.tokens['Token_type'] == 'BNB', [day]] += num_bnb
+
+                # Update tokens DataFrame by adding Smarty tokens
+                self.tokens.loc[self.tokens['Token_type'] == group, [day]] += num_tokens
+
+    def remove_tokens(self, params_tokens: dict, day: int, currency_rate=None):
+        """
+        Removes tokens from the Farm
+        :param currency_rate: currency rate, could be specified by adding Smarty tokens manually
+        :param params_tokens: dictionary with (token_type: num_tokens)
+        :param day: number of the current day
+        """
+
+        # To remove tokens we need to get the same dict but with negative values
+        dict_tokens = {}
+        for group in params_tokens.keys():
+            dict_tokens[group] = -params_tokens[group]
+
+        # Remove tokens by adding negative amounts of tokens to the Farm
+        self.add_tokens(params_tokens=dict_tokens, day=day, currency_rate=currency_rate)
 
     def __add_smarty_dividends(self, num_tokens: float, day:int, type_dividends: str):
         """
@@ -147,13 +163,16 @@ class Farm:
                 log(f'On day={day} revenue index in {self.type_farm} = {current_index_revenue} > {index_revenue}')
                 return
             else:
-                # Calculate number of tokens and ad them to dividends
+                # Calculate number of tokens and add them to dividends
                 delta_index = index_revenue - current_index_revenue
                 num_smarty = delta_index * self.get_tokens_amount(day=day)
                 self.__add_smarty_dividends(day=day, num_tokens=num_smarty, type_dividends=type_dividends)
 
     def get_current_dividends(self, day: int) -> float:
         return self.dividends[day].sum()
+
+    def clear_dividends(self, day: int):
+        self.dividends[day] = 0.0
 
     def update(self, day: int):
         """
@@ -163,3 +182,4 @@ class Farm:
 
         # Copy all data for the current day as initial data of the next day
         self.tokens[day + 1] = self.tokens[day]
+        self.dividends[day + 1] = self.dividends[day]

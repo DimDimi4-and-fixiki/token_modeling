@@ -27,10 +27,7 @@ def create_investors(params_investors: dict, params_modelling: dict) -> dict:
     return investors
 
 
-def sell_tokens(investors: dict, params_tokens: dict, day: int):
-    # todo: Handle Staking Rewards tokens and Community tokens
-    # Types of investors, which we don't include now
-    excluded_tokens = ['Staking rewards', 'Community']
+def sell_tokens(investors: dict, params_tokens: dict, day: int, excluded_tokens: list):
 
     # Loop through all groups of investors
     for group in params_tokens.keys():
@@ -124,7 +121,7 @@ def transfer_investors(sb_pool: Farm, div_farm: Farm, dict_investors: dict,
     :param div_div_farm: number of dividends for DivFarm
     """
 
-
+    log('Transfer investors entered')
     dict_investors = {'Seed': dict_investors['Seed']}
     investors = list(itertools.chain.from_iterable(dict_investors.values()))
 
@@ -137,24 +134,47 @@ def transfer_investors(sb_pool: Farm, div_farm: Farm, dict_investors: dict,
 
         # If we have no tokens in Div Farm (day = 1 case)
         if num_tokens_div_farm == 0:
-            investor.transfer_active_tokens(farm=div_farm, day=day, freeze_period=freeze_period)
+            investor.transfer_active_tokens(farm=div_farm, opposite_farm=sb_pool, day=day, freeze_period=freeze_period)
             continue
 
         # Count dividends / (number of tokens) for both farms
         ratio_div_farm = div_div_farm / num_tokens_div_farm
         ratio_sb_pool = div_sb_pool / num_tokens_sb_pool
 
-        log(f'------ Taking decision for investor with index={index} -------------')
-        log(f'Day={day}, tokens in sb_pool={num_tokens_sb_pool}, div_sb_pool={div_sb_pool}, ratio_sb_pool={ratio_sb_pool}')
-        log(f'Day={day}, tokens in div_farm={num_tokens_div_farm}, div_div_farm={div_div_farm}, ratio_div_farm={ratio_div_farm}')
+        # log(f'------ Taking decision for investor with index={index} -------------')
+        # log(f'Day={day}, tokens in sb_pool={num_tokens_sb_pool}, div_sb_pool={div_sb_pool}, ratio_sb_pool={ratio_sb_pool}')
+        # log(f'Day={day}, tokens in div_farm={num_tokens_div_farm}, div_div_farm={div_div_farm}, ratio_div_farm={ratio_div_farm}')
 
         # Transfer all active tokens of investor to a more profitable farm
         if ratio_div_farm > ratio_sb_pool:
-            investor.transfer_active_tokens(farm=div_farm, day=day, freeze_period=freeze_period)
+            investor.transfer_active_tokens(farm=div_farm, opposite_farm=sb_pool, day=day,  freeze_period=freeze_period)
             continue
         else:
-            investor.transfer_active_tokens(farm=sb_pool, day=day, freeze_period=freeze_period)
+            investor.transfer_active_tokens(farm=sb_pool, opposite_farm=div_farm, day=day, freeze_period=freeze_period)
             continue
+
+
+def pay_dividends(dict_investors: dict, farm: Farm, day: int):
+
+    # Calculate dividends per token
+    num_tokens = farm.get_tokens_amount(day=day)
+    num_dividends = farm.get_current_dividends(day=day)
+    dividends_per_token = num_dividends / num_tokens
+
+    for group in dict_investors:
+        investors = dict_investors[group]
+        for investor in investors:
+            num_dividends_investor = investor.get_tokens_amount(farm=farm, day=day) * dividends_per_token
+            params_dividends_tokens = {'Staking rewards': num_dividends_investor}
+            investor.add_tokens(params_tokens=params_dividends_tokens, day=day)
+
+    # Clear farm's dividends (we payed them to investors)
+    farm.clear_dividends(day=day)
+
+
+
+
+
 
 
 

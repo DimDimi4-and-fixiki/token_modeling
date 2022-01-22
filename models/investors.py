@@ -53,7 +53,26 @@ class Investor:
                 self.df_tokens.loc[(self.df_tokens['Day_of_purchase'] == day) & (self.df_tokens['Token_type'] == group),
                                    ['Num']] += num_tokens
 
-    def transfer_active_tokens(self, farm: Farm, day: int, freeze_period: int):
+    def get_tokens_amount(self, farm: Farm, day: int) -> float:
+        """
+        Returns number of tokens that investor has in farm
+        :param farm: Farm object
+        :param day: number of the day
+        :return: number of tokens
+        """
+
+        flag_farm = 'DivFarm_flag' if farm.type_farm == 'DivFarm' else 'SbPool_flag'
+        num_tokens = self.df_tokens[self.df_tokens[flag_farm] & (self.df_tokens['Day_of_purchase'] <= day)]['Num'].sum()
+        return num_tokens
+
+    def transfer_active_tokens(self, farm: Farm, opposite_farm: Farm, day: int, freeze_period: int):
+        """
+        Transfers investor's active tokens to the farm
+        :param farm: Farm to transfer tokens to
+        :param opposite_farm: opposite farm (investor could have tokens here)
+        :param day: number of the day
+        :param freeze_period: number of days for tokens freeze
+        """
 
         # Name of column for needed Farm
         flag_farm = 'SbPool_flag' if farm.type_farm == 'SbPool' else 'DivFarm_flag'
@@ -63,6 +82,10 @@ class Investor:
         df_active_tokens = self.df_tokens[(self.df_tokens['Day_of_freeze'] <= day - freeze_period)
                                           & (self.df_tokens[flag_farm] == False) &
                                           (self.df_tokens['Day_of_purchase'] <= day)]
+
+        df_active_tokens_opposite_farm = df_active_tokens.copy(deep=True)
+        df_active_tokens_opposite_farm = df_active_tokens_opposite_farm[
+            df_active_tokens_opposite_farm[flag_opposite_farm]]
 
         # Mark tokens as transferred to the needed Farm
         df_active_tokens[flag_opposite_farm] = False
@@ -76,10 +99,15 @@ class Investor:
 
         # Fill dictionary with active tokens parameters
         params_active_tokens = {}
+        params_active_tokens_opposite_farm = {}
+
         for group in token_types:
             params_active_tokens[group] = df_active_tokens[df_active_tokens['Token_type'] == group]['Num'].sum()
+            params_active_tokens_opposite_farm[group] = df_active_tokens_opposite_farm[
+                df_active_tokens_opposite_farm['Token_type'] == group]['Num'].sum()
 
-        # todo: Do minus tokens from current farm
         # Add all active tokens to the Farm
         farm.add_tokens(params_tokens=params_active_tokens, day=day)
 
+        # Remove part of tokens that used to be in the opposite farm
+        opposite_farm.remove_tokens(params_tokens=params_active_tokens_opposite_farm, day=day)

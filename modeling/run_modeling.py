@@ -6,11 +6,10 @@ import pandas as pd
 import numpy as np
 from preprocessing.prepare_config_files import prepare_token_params_sample, prepare_initial_params_sample, prepare_mint_sample
 from utilities.py_tools import log, get_turnover_distribution
-from models.investors import Investor
 from models.farms import Farm
 from utilities.modelling_tools import create_investors, sell_tokens, get_mint_distribution_by_month, \
-    distribute_tokens_by_days, get_tokens_distribution_by_day, transfer_investors
-
+    distribute_tokens_by_days, get_tokens_distribution_by_day, transfer_investors, pay_dividends
+from tqdm import tqdm
 
 """
     1. Constants for modelling
@@ -66,6 +65,9 @@ PERIOD_DIVIDENDS = int(df_initial_params['dividends_period'].values[0])
 # Distribution of the turnover
 TURNOVER_DISTRIBUTION = get_turnover_distribution(turnover=TURNOVER, turnover_rate=TURNOVER_RATE, num_years=NUM_YEARS)
 
+# Currency rates
+RATE_USD_BNB = float(df_initial_params['dollar_bnb_ratio'])
+RATE_BNB_SMARTY = float(df_initial_params['bnb_smarty_ratio'])
 
 # Number of tokens in SbPool
 NUM_SEED_TOKENS_SB_POOL = int(df_initial_params['tokens_seed_num_sb_pool'].values[0])
@@ -79,7 +81,7 @@ PARAMS_TOKENS_SB_POOL = {
 
 # Initialize Sb Pool object with Seed and Community tokens
 sb_pool = Farm(type='SbPool', params_tokens=PARAMS_TOKENS_SB_POOL)
-sb_pool.add_tokens(params_tokens=PARAMS_TOKENS_SB_POOL, day=1, currency_rate=0.01)
+sb_pool.add_tokens(params_tokens=PARAMS_TOKENS_SB_POOL, day=1, currency_rate=RATE_BNB_SMARTY)
 
 # Create Div Farm pool object
 div_farm = Farm(type='DivFarm')
@@ -92,13 +94,13 @@ state = 1
 investors = create_investors(PARAMS_INVESTORS, PARAMS_MODELLING)
 
 # Tokens that we are not modelling now
-TOKENS_EXCLUDED = ['Staking rewards', 'Community']
+TOKENS_EXCLUDED = ['Community', 'Staking rewards']
 
 for num_month in range(0, 2):
     # Get tokens that would be released during the current month
     params_tokens = get_mint_distribution_by_month(mint_distr=df_mint_distr, num_month=num_month)
 
-    # Delete tokens, which are not included, from the distribution
+    # Delete tokens, which are not included in modelling, from the distribution
     for group in TOKENS_EXCLUDED:
         del params_tokens[group]
 
@@ -112,45 +114,58 @@ for num_month in range(0, 2):
         # params_tokens['Community'] -= NUM_COMMUNITY_TOKENS_SB_POOL
 
     distribution_tokens_days = distribute_tokens_by_days(params_tokens)
-    for day in range(1, 30 + 1):
+    for day in tqdm(range(1, 30 + 1)):
 
         # Calculate number of the day
         num_day = num_month * 30 + day
 
         # Sell tokens to investors
         distribution_tokens = get_tokens_distribution_by_day(distribution_tokens_days, day)
-        sell_tokens(investors=investors, params_tokens=distribution_tokens, day=num_day)
-        sb_pool.add_dividends(day=num_day, type_operation='bnb', num_tokens=TURNOVER_DISTRIBUTION[num_day-1],
-                              type_dividends='Turnover')
+        sell_tokens(investors=investors, params_tokens=distribution_tokens, day=num_day, excluded_tokens=TOKENS_EXCLUDED)
+
         if state == 1:
 
             # Params for calculating dividends
-            sb_pool_rate = 0.25 / 100
+            sb_pool_rate = 0.5
             div_farm_rate = 1 - sb_pool_rate
             turnover, dividends_rate = TURNOVER_DISTRIBUTION[num_day - 1], 0.3 / 100
+
+            # Convert turnover from USD to Smarty
+            bnb_smarty_rate = sb_pool.get_currency_rate(day=day)
+            turnover_smarty = turnover / RATE_USD_BNB / bnb_smarty_rate
 
             # Calculate dividends from turnover for each farm
             div_sb_pool = turnover * dividends_rate * sb_pool_rate
             div_div_farm = turnover * dividends_rate * div_farm_rate
 
-            div_farm.add_dividends(day=day, num_tokens=div_div_farm, type_dividends='Turnover')
-            sb_pool.add_dividends(day=day, num_tokens=div_sb_pool, type_dividends='Turnover')
+            div_farm.add_dividends(day=day, num_tokens=div_div_farm, type_dividends='Turnover', type_operation='smarty')
+            sb_pool.add_dividends(day=day, num_tokens=div_sb_pool, type_dividends='Turnover', type_operation='smarty')
 
             transfer_investors(sb_pool=sb_pool, div_sb_pool=div_div_farm,
                                div_farm=div_farm, div_div_farm=div_div_farm,
                                dict_investors=investors, day=num_day,
                                freeze_period=10)
 
+            # If we need to mint extra dividends
             if num_day % PERIOD_EXTRA_MINT == 0:
                 bnb_smarty_rate = sb_pool.get_currency_rate(day=day)
-                div_farm.add_dividends(day=day, index_revenue=MIN_INDEX_REVENUE,
-                                       type_dividends='Minted', type_operation='smarty',
-                                       bnb_smarty_rate=bnb_smarty_rate)
-                sb_pool.add_dividends(day=day, index_revenue=MIN_INDEX_REVENUE,
-                                      type_dividends='Minted', type_operation='smarty',
-                                      bnb_smarty_rate=bnb_smarty_rate)
-                print('a')
 
+                # Mint Smarty tokens to DivFarm
+                div_farm.add_dividends(day=day, index_revenue=MIN_INDEX_REVENUE,
+                                       type_dividends='Minted', type_operation='index_revenue',
+                                       bnb_smarty_rate=bnb_smarty_rate)
+
+                # Mint Smarty tokens to SbPool
+                sb_pool.add_dividends(day=day, index_revenue=MIN_INDEX_REVENUE,
+                                      type_dividends='Minted', type_operation='index_revenue',
+                                      bnb_smarty_rate=bnb_smarty_rate)
+
+            if num_day % PERIOD_DIVIDENDS == 0:
+                pay_dividends(dict_investors=investors, farm=div_farm, day=day)
+                pay_dividends(dict_investors=investors, farm=sb_pool, day=day)
+
+
+            log(f'Day={day}, bnb / Smarty ratio = {sb_pool.get_currency_rate(day=day)}')
             sb_pool.update(day=num_day)
             div_farm.update(day=num_day)
 

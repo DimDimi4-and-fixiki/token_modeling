@@ -27,7 +27,7 @@ class Investor:
         # Create DataFrame with parameters of tokens
         cols_tokens = ['Token_type', 'Num', 'Initial_price', 'SbPool_flag', 'DivFarm_flag', 'Day_of_freeze']
         self.df_tokens = pd.DataFrame(columns=cols_tokens)
-        self.df_tokens['Token_type'] = token_types
+        self.df_tokens['Token_type'] = pd.Series([self.group, 'Staking rewards'])
 
         # Add number of month to tokens DataFrame
         days_data = {'Day_of_purchase': [i for i in range(1, (num_months + 1) * 30)]}
@@ -78,11 +78,13 @@ class Investor:
         flag_farm = 'SbPool_flag' if farm.type_farm == 'SbPool' else 'DivFarm_flag'
         flag_opposite_farm = 'DivFarm_flag' if flag_farm == 'SbPool_flag' else 'SbPool_flag'
 
-        # Get DataFrame of active tokens
+        # Get DataFrame with active tokens
         df_active_tokens = self.df_tokens[(self.df_tokens['Day_of_freeze'] <= day - freeze_period)
                                           & (self.df_tokens[flag_farm] == False) &
-                                          (self.df_tokens['Day_of_purchase'] <= day)]
+                                          (self.df_tokens['Day_of_purchase'] <= day) &
+                                          (self.df_tokens['Num'] > 0)]
 
+        # Get active tokens that currently are put in different farm
         df_active_tokens_opposite_farm = df_active_tokens.copy(deep=True)
         df_active_tokens_opposite_farm = df_active_tokens_opposite_farm[
             df_active_tokens_opposite_farm[flag_opposite_farm]]
@@ -95,7 +97,8 @@ class Investor:
         # Change initial Data Frame with investors tokens
         self.df_tokens[(self.df_tokens['Day_of_freeze'] <= day - freeze_period)
                        & (self.df_tokens[flag_farm] == False) &
-                       (self.df_tokens['Day_of_purchase'] <= day)] = df_active_tokens
+                       (self.df_tokens['Day_of_purchase'] <= day) &
+                       (self.df_tokens['Num'] > 0)] = df_active_tokens
 
         # Fill dictionary with active tokens parameters
         params_active_tokens = {}

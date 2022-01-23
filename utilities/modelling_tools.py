@@ -168,8 +168,7 @@ def pay_dividends(dict_investors: dict, farm: Farm, day: int):
             params_dividends_tokens = {'Staking rewards': num_dividends_investor}
             investor.add_tokens(params_tokens=params_dividends_tokens, day=day)
 
-    # Clear farm's dividends (we payed them to investors)
-    farm.clear_dividends(day=day)
+
 
 
 

@@ -122,16 +122,16 @@ def get_turnover_distribution(turnover, turnover_rate, num_years, growth_type='l
     """
 
     # Distribution of the turnover
-    turnover_distr = [turnover]
-    num_days = 365 * num_years
+    turnover_distr = []
 
-    for num_year in range(1, num_years + 1):
-        turnover_prev_year = turnover * (1 + turnover_rate) ** (num_year - 1)
-        turnover_next_year = turnover * (1 + turnover_rate) ** num_year
-        turnover_delta = (turnover_next_year - turnover_prev_year) / 365
+    # Number of days to distribute turnover
+    num_days = num_years * 360
+    for year in range(1, num_years + 1):
+        # Distribute turnover over the days
+        turnover_year = turnover * (1 + turnover_rate) ** year
 
-        for num_day in range(1, 366):
-            turnover_distr.append(turnover_prev_year + num_day * turnover_delta)
+        for day in range(360):
+            turnover_distr.append(turnover_year // 360)
 
     return turnover_distr
 

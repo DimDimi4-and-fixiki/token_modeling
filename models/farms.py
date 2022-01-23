@@ -115,7 +115,7 @@ class Farm:
         # Remove tokens by adding negative amounts of tokens to the Farm
         self.add_tokens(params_tokens=dict_tokens, day=day, currency_rate=currency_rate)
 
-    def __add_smarty_dividends(self, num_tokens: float, day:int, type_dividends: str):
+    def __add_smarty_dividends(self, num_tokens: float, day: int, type_dividends: str):
         """
         Private method for adding Smarty tokens to dividends
         :param num_tokens: number of tokens
@@ -174,12 +174,17 @@ class Farm:
     def clear_dividends(self, day: int):
         self.dividends[day] = 0.0
 
-    def update(self, day: int):
+    def update(self, day: int, clear_dividends=False):
         """
         Update Farm before the next day by transferring all data to the next day
+        :param clear_dividends: flag if dividends were payed on the current day
         :param day: number of the current day
         """
 
         # Copy all data for the current day as initial data of the next day
         self.tokens[day + 1] = self.tokens[day]
-        self.dividends[day + 1] = self.dividends[day]
+
+        if not clear_dividends:
+            self.dividends[day + 1] = self.dividends[day]
+        else:
+            self.dividends[day + 1] = 0.0

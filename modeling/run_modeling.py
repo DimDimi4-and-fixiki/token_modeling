@@ -9,6 +9,8 @@ from utilities.py_tools import log, get_turnover_distribution
 from models.farms import Farm
 from utilities.modelling_tools import create_investors, sell_tokens, get_mint_distribution_by_month, \
     distribute_tokens_by_days, get_tokens_distribution_by_day, transfer_investors, pay_dividends
+
+from utilities.prepare_results import save_results
 from tqdm import tqdm
 
 """
@@ -84,6 +86,8 @@ PARAMS_TOKENS_SB_POOL = {
 TOKENS_EXCLUDED = ['Community', 'Staking rewards']
 
 
+PATH_RESULTS = '../results/results.xlsx'
+
 """
     2. Initialize farms and investors 
 """
@@ -153,7 +157,7 @@ for num_month in range(0, 2):
         bnb_smarty_rate = sb_pool.get_currency_rate(day=day)
         turnover_smarty = turnover / RATE_USD_BNB / bnb_smarty_rate
 
-        df_turnover = df_turnover.append({'Day': day, 'Shop Turnover, Smarty': turnover})
+        df_turnover = df_turnover.append({'Day': day, 'Shop Turnover, Smarty': turnover}, ignore_index=True)
 
         # Calculate dividends from turnover for each farm
         div_sb_pool = turnover_smarty * dividends_rate * sb_pool_rate
@@ -203,14 +207,7 @@ for num_month in range(0, 2):
         df_currency_rate = df_currency_rate.append(dict_currency_rate, ignore_index=True)
 
 
-
-
-
-
-
+    save_results(file_path=PATH_RESULTS, div_farm=div_farm, sb_pool=sb_pool)
     print(f'Month {num_month} processed')
 
 
-
-
-log("Token params sample is loaded")

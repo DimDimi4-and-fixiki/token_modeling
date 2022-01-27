@@ -12,13 +12,19 @@ from utilities.modelling_tools import create_investors, sell_tokens, get_mint_di
 
 from utilities.prepare_results import save_results
 from tqdm import tqdm
+import warnings
+warnings.filterwarnings('ignore')
 
 """
     1. Constants for modelling
 """
 
+
+# Path for a config file with Initial Params
+PATH_CONSTANTS = 'config/constants.xlsx'
+
 # Read DataFrame with initial Params
-df_initial_params = prepare_initial_params_sample()
+df_initial_params = prepare_initial_params_sample(PATH_CONSTANTS)
 df_mint_distr = prepare_mint_sample()
 
 # Params for risk coefficient distribution
@@ -83,24 +89,24 @@ PARAMS_TOKENS_SB_POOL = {
 
 
 # Tokens that we are not modelling now
-TOKENS_EXCLUDED = ['Community', 'Staking rewards']
+# todo: Now we are modelling only Seed tokens (to see the main trend)
+TOKENS_EXCLUDED = ['Community', 'Staking rewards', 'Public sale', 'Private sale']
 
 
-PATH_RESULTS = '../results/results.xlsx'
+PATH_RESULTS = '../results/'
 
 """
     2. Initialize farms and investors 
 """
 
 # Initialize Sb Pool object with Seed and Community tokens
-sb_pool = Farm(type='SbPool', params_tokens=PARAMS_TOKENS_SB_POOL)
+sb_pool = Farm(type='SbPool', params_tokens=PARAMS_TOKENS_SB_POOL, days_num=NUM_MONTHS * 30 + 1)
 sb_pool.add_tokens(params_tokens=PARAMS_TOKENS_SB_POOL, day=1, currency_rate=RATE_BNB_SMARTY)
 
-# Create Div Farm pool object
-div_farm = Farm(type='DivFarm')
+# Initialize Div Farm pool object
+div_farm = Farm(type='DivFarm', days_num=NUM_MONTHS * 30 + 1)
 
-
-# Get dictionary with Investor objects for all groups
+# Initialize dictionary with Investor objects for all groups
 investors = create_investors(PARAMS_INVESTORS, PARAMS_MODELLING)
 
 
@@ -118,9 +124,9 @@ df_turnover = pd.DataFrame(columns=cols_turnover)
     4. Run modelling
 """
 
-for num_month in range(0, 2):
+for num_month in range(0, NUM_MONTHS):
 
-    log(f'----- Modeling for month = {num_month} started -----')
+    log(f'----- Modelling for month = {num_month} started -----')
 
     # Get tokens that would be released during the current month
     params_tokens = get_mint_distribution_by_month(mint_distr=df_mint_distr, num_month=num_month)
@@ -154,7 +160,7 @@ for num_month in range(0, 2):
         turnover, dividends_rate = TURNOVER_DISTRIBUTION[num_day - 1], 0.3 / 100
 
         # Convert turnover dividends from USD to Smarty
-        bnb_smarty_rate = sb_pool.get_currency_rate(day=day)
+        bnb_smarty_rate = sb_pool.get_currency_rate(day=num_day)
         turnover_smarty = turnover / RATE_USD_BNB / bnb_smarty_rate
 
         df_turnover = df_turnover.append({'Day': day, 'Shop Turnover, Smarty': turnover}, ignore_index=True)
@@ -164,8 +170,8 @@ for num_month in range(0, 2):
         div_div_farm = turnover_smarty * dividends_rate * div_farm_rate
 
         # Add dividends to both farms
-        div_farm.add_dividends(day=day, num_tokens=div_div_farm, type_dividends='Turnover', type_operation='smarty')
-        sb_pool.add_dividends(day=day, num_tokens=div_sb_pool, type_dividends='Turnover', type_operation='smarty')
+        div_farm.add_dividends(day=num_day, num_tokens=div_div_farm, type_dividends='Turnover', type_operation='smarty')
+        sb_pool.add_dividends(day=num_day, num_tokens=div_sb_pool, type_dividends='Turnover', type_operation='smarty')
 
         # Imitate transfer of tokens by investors
         transfer_investors(sb_pool=sb_pool, div_sb_pool=div_div_farm,
@@ -177,22 +183,22 @@ for num_month in range(0, 2):
         if num_day % PERIOD_EXTRA_MINT == 0:
 
             # Get current BNB / Smarty rate
-            bnb_smarty_rate = sb_pool.get_currency_rate(day=day)
+            bnb_smarty_rate = sb_pool.get_currency_rate(day=num_day)
 
             # Mint Smarty tokens to DivFarm
-            div_farm.add_dividends(day=day, index_revenue=MIN_INDEX_REVENUE,
+            div_farm.add_dividends(day=num_day, index_revenue=MIN_INDEX_REVENUE,
                                    type_dividends='Minted', type_operation='index_revenue',
                                    bnb_smarty_rate=bnb_smarty_rate)
 
             # Mint Smarty tokens to SbPool
-            sb_pool.add_dividends(day=day, index_revenue=MIN_INDEX_REVENUE,
+            sb_pool.add_dividends(day=num_day, index_revenue=MIN_INDEX_REVENUE,
                                   type_dividends='Minted', type_operation='index_revenue',
                                   bnb_smarty_rate=bnb_smarty_rate)
 
         # Pay dividends to investors (if needed)
         if num_day % PERIOD_DIVIDENDS == 0:
-            pay_dividends(dict_investors=investors, farm=div_farm, day=day)
-            pay_dividends(dict_investors=investors, farm=sb_pool, day=day)
+            pay_dividends(dict_investors=investors, farm=div_farm, day=num_day)
+            pay_dividends(dict_investors=investors, farm=sb_pool, day=num_day)
 
             # Update farms parameters before going to the next day
             sb_pool.update(day=num_day, clear_dividends=True)
@@ -203,11 +209,14 @@ for num_month in range(0, 2):
             sb_pool.update(day=num_day)
             div_farm.update(day=num_day)
 
+        # Add BNB / Smarty rate stats for a current day
         dict_currency_rate = {'Day': day, 'BNB / Smarty Rate': bnb_smarty_rate}
         df_currency_rate = df_currency_rate.append(dict_currency_rate, ignore_index=True)
 
+    # log modelling completion for current month
+    log(f'Month {num_month} processed')
 
-    save_results(file_path=PATH_RESULTS, div_farm=div_farm, sb_pool=sb_pool)
-    print(f'Month {num_month} processed')
-
+log('------ Saving results in Excel file ------')
+save_results(folder_path=PATH_RESULTS, div_farm=div_farm, sb_pool=sb_pool, df_currency_rate=df_currency_rate,
+             df_turnover=df_turnover)
 

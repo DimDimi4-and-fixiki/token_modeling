@@ -8,6 +8,13 @@ import itertools
 
 
 def create_investors(params_investors: dict, params_modelling: dict) -> dict:
+    """
+    Creates dictionary with lists of Investors objects for each type of investor
+    :param params_investors: Params of investors
+    :param params_modelling: Modelling params for investors
+    :return: dictionary with Investor objects
+    """
+
     # Dictionary for the results
     investors = {}
 
@@ -49,6 +56,7 @@ def sell_tokens(investors: dict, params_tokens: dict, day: int, excluded_tokens:
 
 
 def get_mint_distribution_by_month(mint_distr: pd.DataFrame, num_month: int) -> dict:
+
     # Create zeroes dictionary with all tokens types
     types = mint_distr['Token_type'].unique()
     res_distr = {}
@@ -121,7 +129,7 @@ def transfer_investors(sb_pool: Farm, div_farm: Farm, dict_investors: dict,
     :param div_div_farm: number of dividends for DivFarm
     """
 
-    log('Transfer investors entered')
+    # todo: Now only Seed investors included (to save performance)
     dict_investors = {'Seed': dict_investors['Seed']}
     investors = list(itertools.chain.from_iterable(dict_investors.values()))
 
@@ -140,10 +148,6 @@ def transfer_investors(sb_pool: Farm, div_farm: Farm, dict_investors: dict,
         # Count dividends / (number of tokens) for both farms
         ratio_div_farm = div_div_farm / num_tokens_div_farm
         ratio_sb_pool = div_sb_pool / num_tokens_sb_pool
-
-        # log(f'------ Taking decision for investor with index={index} -------------')
-        # log(f'Day={day}, tokens in sb_pool={num_tokens_sb_pool}, div_sb_pool={div_sb_pool}, ratio_sb_pool={ratio_sb_pool}')
-        # log(f'Day={day}, tokens in div_farm={num_tokens_div_farm}, div_div_farm={div_div_farm}, ratio_div_farm={ratio_div_farm}')
 
         # Transfer all active tokens of investor to a more profitable farm
         if ratio_div_farm > ratio_sb_pool:
